@@ -29,7 +29,7 @@ class ParticleFilter {
  public:
   // Constructor
   // @param num_particles Number of particles
-  ParticleFilter() : num_particles(0), is_initialized(false) {}
+  ParticleFilter() : m_numParticles(0), m_isInitialized(false) {}
 
   // Destructor
   ~ParticleFilter() {}
@@ -99,7 +99,7 @@ class ParticleFilter {
    * initialized Returns whether particle filter is initialized yet or not.
    */
   const bool initialized() const {
-    return is_initialized;
+    return m_isInitialized;
   }
 
   /**
@@ -109,17 +109,17 @@ class ParticleFilter {
   std::string getSenseCoord(Particle best, std::string coord);
 
   // Set of current particles
-  std::vector<Particle> particles;
+  std::vector<Particle> m_particles;
 
  private:
   // Number of particles to draw
-  int num_particles; 
+  int m_numParticles; 
   
   // Flag, if filter is initialized
-  bool is_initialized;
+  bool m_isInitialized;
   
   // Vector of weights of all particles
-  std::vector<double> weights; 
+  std::vector<double> m_weights; 
 };
 
 #endif  // PARTICLE_FILTER_H_

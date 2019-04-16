@@ -18,8 +18,11 @@
 
 #include "helper_functions.h"
 
+#define gNUM_PARTICLES 1000;
 using std::string;
 using std::vector;
+
+using namespace std;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
   /**
@@ -30,8 +33,32 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    * NOTE: Consult particle_filter.h for more information about this method 
    *   (and others in this file).
    */
-  num_particles = 0;  // TODO: Set the number of particles
+  m_numParticles = gNUM_PARTICLES;  // TODO: Set the number of particles
+  default_random_engine gen;
 
+  //Set up our Normal Distributions for Gaussian Noise
+  normal_distribution<double> Nx(x, std[0]);
+  normal_distribution<double> Ny(y,std[1]);
+  normal_distribution<double> Ntheta(theta,std[2]);
+
+  // Create all the particles.
+  for (int i = 0; i < m_numParticles; i++)
+  {
+    // Initialize the particle struct
+    Particle p;
+    // Init all the variables of the particle.
+    p.id = i;
+    p.x = Nx(gen);
+    p.y = Ny(gen);
+    p.theta = Ntheta(gen);
+    p.weight = 1; // Starting weight of the particles is 1
+
+    // Add the newly created particle to the particle and weights vector.
+    m_particles.push_back(p);
+    m_weights.push_back(p.weight);
+  }
+  //set initialized to true, so that isInitialized() returns true now;
+  m_isInitialized = true;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
@@ -43,7 +70,39 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
    *  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
    *  http://www.cplusplus.com/reference/random/default_random_engine/
    */
+  default_random_engine gen;
+  // For each Particle, calculate the new x and y based on what we know about velocity and yaw rate
+  // Calculate these using the formulas provided, and then add Gaussian noise to this.
+  for(int i = 0; i < m_numParticles; i ++)
+  {
+    Particle p = m_particles[i]; // this is inefficient memory wise, but it makes the math below look prettier.
+    double x, y, theta;
+    
+    // Calcualte the new position and angle
+    if (yaw_rate == 0)
+    {
+      x = p.x + velocity * delta_t * cos(p.theta);
+      y = p.y + velocity * delta_t * sin(p.theta);
+      theta = p.theta;
+    }
+    else
+    {
+      x = p.x + velocity/yaw_rate * (sin(p.theta + (yaw_rate * delta_t)) - sin(p.theta));
+      y = p.y + velocity/yaw_rate * (cos(p.theta) - cos(p.theta + (yaw_rate * delta_t)));
+      theta = p.theta + (yaw_rate * delta_t);
+    }
 
+    // Add the Gaussian noise
+    normal_distribution<double> Nx(x, std_pos[0]);
+    normal_distribution<double> Ny(y, std_pos[1]);
+    normal_distribution<double> Ntheta(theta, std_pos[2]);
+
+    // Put these calculated numbers back into the particles vector
+    m_particles[i].x = Nx(gen);
+    m_particles[i].y = Ny(gen);
+    m_particles[i].theta = Ntheta(gen);
+
+  }
 }
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, 
@@ -75,6 +134,17 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   and the following is a good resource for the actual equation to implement
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
+   vector<double> senseX;
+   vector<double> senseY;
+
+   vector<LandmarkObs> transformedObservations;
+   for (int i = 0; i < observations.size(); i++)
+   {
+     LandmarkObs transformedObservation;
+     observation = observation[i];
+
+     transformedObservation.x = parti
+   }
 
 }
 
@@ -85,6 +155,14 @@ void ParticleFilter::resample() {
    * NOTE: You may find std::discrete_distribution helpful here.
    *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
    */
+   default_random_engine gen;
+   discrete_distribution<int> distribution(m_weights.begin(), m_weights.end());
+   vector<Particle> resample_particles;
+   for (int i=0; i < m_numParticles; i++)
+   {
+     resample_particles.push_back(m_particles[distribution(gen)]);
+   }
+   m_particles = resample_particles;
 
 }
 
