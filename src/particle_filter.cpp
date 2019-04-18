@@ -134,18 +134,44 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   and the following is a good resource for the actual equation to implement
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
-   vector<double> senseX;
-   vector<double> senseY;
 
+
+   //vector<double> senseX;
+   //vector<double> senseY;
+  //for each particle
+  for (int i = 0; i < m_numParticles; i++)
+  {
    vector<LandmarkObs> transformedObservations;
-   for (int i = 0; i < observations.size(); i++)
+   //start by converting the observations from vehicle to map coordinates
+   for (int j = 0; j < observations.size(); j++)
    {
      LandmarkObs transformedObservation;
-     observation = observation[i];
-
-     transformedObservation.x = parti
+     observation = observations[j];
+    // preform the space transformation from vehicle to map
+    // This is derived from matix multiplication(http://planning.cs.uiuc.edu/node99.html)
+     transformedObservation.x = particles[i].x + (observation.x * cos(particles[i].theta)) - (sin(particles[i].theta) * observation.y);
+     transformedObservation.y = particles[i].y + (observation.x * sin(particles[i].theta)) + (observation.y * cos(particles[i].theta));
+     // add the transformed observation into the vector
+     transformedObservations.push_back(transformedObservation);
    }
-
+   //reset the particles weight
+   particles[i].weight = 1.0; 
+  }
+  //figure out which landmarks are in the sensor range, so we know which ones to care about
+  vector<double> landmark_dists(map_landmarks.landmarks_list.size());
+  for (int j = 0; j < map_landmarks.landmarks_list.size(); j++)
+  {
+    double distance = dist();
+    if (distance <= sensor_range)
+    {
+      landmark_dists[j] = distance;
+    }
+    else
+    {
+      //if the distance isn't in the sensor distance, set it to infinity so we ignore it completely.
+      landmark_dists[j] = std::numeric_limits<double>::infinity();
+    }
+  }
 }
 
 void ParticleFilter::resample() {
@@ -203,4 +229,29 @@ string ParticleFilter::getSenseCoord(Particle best, string coord) {
   string s = ss.str();
   s = s.substr(0, s.length()-1);  // get rid of the trailing space
   return s;
+}
+
+// Following Function Copied from Udacity Classroom Particle Weights Solution
+double ParticleFilter::multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs,
+                   double mu_x, double mu_y) {
+  // calculate normalization term
+  double gauss_norm;
+  gauss_norm = 1 / (2 * M_PI * sig_x * sig_y);
+
+  // calculate exponent
+  double exponent;
+  exponent = (pow(x_obs - mu_x, 2) / (2 * pow(sig_x, 2)))
+               + (pow(y_obs - mu_y, 2) / (2 * pow(sig_y, 2)));
+    
+  // calculate weight using normalization terms and exponent
+  double weight;
+  weight = gauss_norm * exp(-exponent);
+    
+  return weight;
+}
+
+// a wrapper around the distance formula
+double ParticleFilter::dist(double x1, double y1, double x2, double y2) 
+{
+ return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
 }
