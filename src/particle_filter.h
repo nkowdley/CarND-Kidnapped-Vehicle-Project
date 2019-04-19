@@ -112,6 +112,11 @@ class ParticleFilter {
   std::vector<Particle> m_particles;
 
  private:
+  //helper functions for updateWeights Step
+  //dist() is the distance formula
+  double dist(double x1, double y1, double x2, double y2);
+  //multiv_prob is the gaussian multivariate.  This function was taken from the udacity classroom
+  double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs, double mu_x, double mu_y);
   // Number of particles to draw
   int m_numParticles; 
   
